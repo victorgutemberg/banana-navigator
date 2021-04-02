@@ -52,8 +52,8 @@ class Agent():
         if self.t_step == 0:
             # If enough samples are available in memory, get random subset and learn
             if len(self.memory) > BATCH_SIZE:
-                experiences = self.memory.sample()
-                self.learn(experiences, GAMMA)
+                indexes, experiences, weights = self.memory.sample()
+                self.learn(indexes, experiences, weights)
 
     def act(self, state, eps=0.):
         '''Returns actions for given state as per current policy.
@@ -75,7 +75,7 @@ class Agent():
         else:
             return random.choice(np.arange(self.action_size))
 
-    def learn(self, experiences, gamma):
+    def learn(self, indexes, experiences, weights, gamma=GAMMA):
         '''Update value parameters using given batch of experience tuples.
 
         Params

@@ -9,7 +9,7 @@ from sum_tree import SumTree
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-to_experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'next_state', 'done', 'priority'])
+to_experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'next_state', 'done'])
 
 
 class ReplayBuffer:
@@ -29,9 +29,9 @@ class ReplayBuffer:
         self.batch_size = batch_size
         self.seed = random.seed(seed)
 
-    def add(self, state, action, reward, next_state, done, priority):
+    def add(self, state, action, reward, next_state, done):
         '''Add a new experience to memory.'''
-        experience = to_experience(state, action, reward, next_state, done, priority)
+        experience = to_experience(state, action, reward, next_state, done)
         self.memory.append(experience)
 
     def sample(self):
@@ -47,7 +47,7 @@ class ReplayBuffer:
         indexes = torch.from_numpy(np.vstack(indexes)).int().to(device)
         weights = torch.from_numpy(np.vstack(weights)).float().to(device)
 
-        return (states, actions, rewards, next_states, dones, indexes, weights)
+        return indexes, (states, actions, rewards, next_states, dones), weights
 
     @abstractmethod
     def _get_experices_sample(self,):
@@ -109,15 +109,15 @@ class ProportionalReplayBuffer(ReplayBuffer):
         N = len(self.memory)
 
         indexes = np.zeros(self.batch_size)
-        experiences = np.zeros(self.batch_size)
+        experiences = np.zeros(self.batch_size, dtype=tuple)
         weights = np.zeros(self.batch_size)
         for i in range(self.batch_size):
             range_start = i * range_size
             range_end = (i + 1) * range_size
             priority = np.random.uniform(range_start, range_end)
 
-            index, experience = self.memory.sample(priority)
-            probability = (experience.priority / total) ** self.alpha
+            index, priority, experience = self.memory.sample(priority)
+            probability = (priority / total) ** self.alpha
 
             indexes[i] = index
             experiences[i] = experience

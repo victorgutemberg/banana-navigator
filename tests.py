@@ -5,7 +5,8 @@ import unittest
 from replay_buffer import to_experience
 from sum_tree import SumTree
 
-to_experience = namedtuple('Experience', field_names=['priority'])
+experience = ()
+
 
 class SumTreeTest(unittest.TestCase):
     def test_length(self):
@@ -21,34 +22,45 @@ class SumTreeTest(unittest.TestCase):
 
         self.assertEquals(len(tree), 0)
 
-        tree.append(to_experience(5))
+        tree.append(experience)
+        tree.update(0, 5)
         np.assert_array_equal(tree.nodes, [5, 5, 0, 5, 0, 0])
         self.assertEquals(len(tree), 1)
 
-        tree.append(to_experience(3))
+        tree.append(experience)
+        tree.update(1, 3)
         np.assert_array_equal(tree.nodes, [8, 8, 0, 5, 3, 0])
         self.assertEquals(len(tree), 2)
 
-        tree.append(to_experience(2))
+        tree.append(experience)
+        tree.update(2, 2)
         np.assert_array_equal(tree.nodes, [10, 8, 2, 5, 3, 2])
         self.assertEquals(len(tree), 3)
 
-        tree.append(to_experience(7))
+        tree.append(experience)
+        tree.update(0, 7)
         np.assert_array_equal(tree.nodes, [12, 10, 2, 7, 3, 2])
         self.assertEquals(len(tree), 3)
 
-        tree.append(to_experience(6))
+        tree.append(experience)
+        tree.update(1, 6)
         np.assert_array_equal(tree.nodes, [15, 13, 2, 7, 6, 2])
         self.assertEquals(len(tree), 3)
 
     def test_sample(self):
         tree = SumTree(4)
-        tree.append(to_experience(1))
-        tree.append(to_experience(2))
-        tree.append(to_experience(3))
-        tree.append(to_experience(4))
+        tree.append(experience)
+        tree.update(0, 1)
+        tree.append(experience)
+        tree.update(1, 2)
+        tree.append(experience)
+        tree.update(2, 3)
+        tree.append(experience)
+        tree.update(3, 4)
 
-        self.assertTupleEqual(tree.sample(1)[1], to_experience(2))
-        self.assertTupleEqual(tree.sample(2)[1], to_experience(2))
-        self.assertTupleEqual(tree.sample(3)[1], to_experience(3))
-        self.assertTupleEqual(tree.sample(4)[1], to_experience(3))
+        self.assertEqual(tree.sample(1)[1], 2)
+        self.assertEqual(tree.sample(2)[1], 2)
+        self.assertEqual(tree.sample(3)[1], 3)
+        self.assertEqual(tree.sample(4)[1], 3)
+
+SumTreeTest().test_sample()

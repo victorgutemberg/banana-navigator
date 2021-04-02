@@ -11,7 +11,7 @@ class SumTree:
         self.capacity = capacity
         self.nodes = np.zeros(2 ** depth - 1 - redundant_leaves)
         self.transitions = np.zeros(self.capacity, dtype=tuple)
-        self.max = 0
+        self.max = 1
         self.cur_index = 0 # holds the next position to insert an item.
 
         self._leaves_offset = 2 ** (depth - 1) - 1 # offset to reach the leaves of the tree.
@@ -22,9 +22,7 @@ class SumTree:
         return self.nodes[0]
 
     def append(self, transition):
-        priority = transition.priority
-
-        self.max = max(self.max, priority)
+        priority = self.max # assign max priority so the recent transitions are selected at least one
         self.update(self.cur_index, priority)
         self.transitions[self.cur_index] = transition
 
@@ -42,18 +40,21 @@ class SumTree:
         return (index - 1) // 2
 
     def update(self, index, priority):
-        if self.transitions[index]:
-            change = priority - self.transitions[index].priority
+        index += self._leaves_offset
+        self.max = max(self.max, priority)
+        if self.nodes[index]:
+            change = priority - self.nodes[index]
         else:
             change = priority
 
-        self._update(index + self._leaves_offset, change)
+        self._update(index, change)
 
     def sample(self, priority):
         index = self._sample(0, priority)
+        priority = self.nodes[index + self._leaves_offset]
         transition = self.transitions[index]
 
-        return (index, transition)
+        return (index, priority, transition)
 
     def _sample(self, index, priority):
         # if reached a leaf index, stop and return transition index.
