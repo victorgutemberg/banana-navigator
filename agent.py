@@ -33,24 +33,24 @@ class Agent():
         self.action_size = action_size
         self.seed = random.seed(seed)
 
-        # Q-Network
+        # Q-Network.
         self.qnetwork_local = model(state_size, action_size, seed).to(device)
         self.qnetwork_target = model(state_size, action_size, seed).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
 
-        # Replay memory
+        # replay memory.
         self.memory = memory
-        # Initialize time step (for updating every UPDATE_EVERY steps)
+        # initialize time step (for updating every UPDATE_EVERY steps).
         self.t_step = 0
     
     def step(self, state, action, reward, next_state, done):
-        # Save experience in replay memory
+        # save experience in replay memory.
         self.memory.add(state, action, reward, next_state, done)
         
-        # Learn every UPDATE_EVERY time steps.
+        # learn every UPDATE_EVERY time steps.
         self.t_step = (self.t_step + 1) % UPDATE_EVERY
         if self.t_step == 0:
-            # If enough samples are available in memory, get random subset and learn
+            # if enough samples are available in memory, get random subset and learn.
             if len(self.memory) > BATCH_SIZE:
                 indexes, experiences, weights = self.memory.sample()
                 self.learn(indexes, experiences, weights)
@@ -69,7 +69,7 @@ class Agent():
             action_values = self.qnetwork_local(state)
         self.qnetwork_local.train()
 
-        # Epsilon-greedy action selection
+        # epsilon-greedy action selection.
         if random.random() > eps:
             return int(np.argmax(action_values.cpu().data.numpy()))
         else:
@@ -85,23 +85,27 @@ class Agent():
         '''
         states, actions, rewards, next_states, dones = experiences
 
-        # Get max predicted Q values (for next states) from target model
+        # get max predicted Q values (for next states) from target model.
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
-        # Compute Q targets for current states 
-        Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
+        # compute Q targets for current states.
+        Q_targets = rewards + (gamma * weights * Q_targets_next * (1 - dones))
 
-        # Get expected Q values from local model
+        # get expected Q values from local model.
         Q_expected = self.qnetwork_local(states).gather(1, actions)
 
-        # Compute loss
+        # compute new priorities.
+        priorities = abs(Q_expected - Q_targets).detach().numpy()
+        self.memory.batch_update(indexes, priorities)
+
+        # compute loss.
         loss = F.mse_loss(Q_expected, Q_targets)
-        # Minimize the loss
+        # minimize the loss.
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
-        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)                     
+        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
 
     def soft_update(self, local_model, target_model, tau):
         '''Soft update model parameters.

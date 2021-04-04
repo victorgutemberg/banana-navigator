@@ -1,7 +1,7 @@
 import numpy as np
 
 class SumTree:
-    def __init__(self, capacity):
+    def __init__(self, capacity, e):
         # the depth of the complete binary tree.
         depth = int(np.ceil(np.log2(capacity)) + 1)
         leaves_capacity = 2 ** (depth - 1)
@@ -9,9 +9,10 @@ class SumTree:
         redundant_leaves = leaves_capacity - capacity
 
         self.capacity = capacity
+        self.e = e
         self.nodes = np.zeros(2 ** depth - 1 - redundant_leaves)
         self.transitions = np.zeros(self.capacity, dtype=tuple)
-        self.max = 1
+        self.max_priority = 1
         self.cur_index = 0 # holds the next position to insert an item.
 
         self._leaves_offset = 2 ** (depth - 1) - 1 # offset to reach the leaves of the tree.
@@ -22,13 +23,17 @@ class SumTree:
         return self.nodes[0]
 
     def append(self, transition):
-        priority = self.max # assign max priority so the recent transitions are selected at least one
+        priority = self.max_priority # assign max priority so the recent transitions are selected at least one
         self.update(self.cur_index, priority)
         self.transitions[self.cur_index] = transition
 
         self.cur_index = (self.cur_index + 1) % self.capacity # calculate next index.
         if len(self) < self.capacity:
             self._len += 1
+
+    def batch_update(self, indexes, priorities):
+        for index, priority in zip(indexes, priorities):
+            self.update(index, priority)
 
     def get_left_index(self, index):
         return 2 * index + 1
@@ -41,7 +46,8 @@ class SumTree:
 
     def update(self, index, priority):
         index += self._leaves_offset
-        self.max = max(self.max, priority)
+        priority += self.e
+        self.max_priority = max(self.max_priority, priority)
         if self.nodes[index]:
             change = priority - self.nodes[index]
         else:

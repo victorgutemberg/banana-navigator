@@ -2,10 +2,46 @@ from collections import namedtuple
 import numpy.testing as np
 import unittest
 
-from replay_buffer import to_experience
+from array_local import Array
+from replay_buffer import RankBasedReplayBuffer
 from sum_tree import SumTree
 
 experience = ()
+
+
+class ArrayTest(unittest.TestCase):
+    def test_append(self):
+        array = Array(4)
+
+        transitions = [1, 2, 3, 4]
+        array.append(transitions[0])
+        array.append(transitions[1])
+        array.append(transitions[2])
+        array.append(transitions[3])
+
+        expected_transition = transitions[::-1]
+        for i in range(len(transitions)):
+            # check that all transitions have the max priority assigned
+            # and if the transitions are added in reverse order.
+            self.assertEntry(array[i], array.max_priority, expected_transition[i])
+
+    def test_batch_update(self):
+        array = Array(4)
+        array.append(1)
+        array.append(2)
+        array.append(3)
+        array.append(4)
+
+        array.batch_update(range(4), [6, 5, 7, 4])
+
+        self.assertEntry(array[0], 7, 2)
+        self.assertEntry(array[1], 6, 4)
+        self.assertEntry(array[2], 5, 3)
+        self.assertEntry(array[3], 4, 1)
+
+    def assertEntry(self, entry, priority, transition):
+        self.assertEqual(entry[0], priority)
+        self.assertEqual(entry[1], transition)
 
 
 class SumTreeTest(unittest.TestCase):
@@ -63,4 +99,31 @@ class SumTreeTest(unittest.TestCase):
         self.assertEqual(tree.sample(3)[1], 3)
         self.assertEqual(tree.sample(4)[1], 3)
 
-SumTreeTest().test_sample()
+
+class RankBasedReplayBufferTest(unittest.TestCase):
+    def test_get_sample_ranges(self):
+        batch_size = 3
+        buffer_size = 10
+        alpha = 1
+        buffer = RankBasedReplayBuffer(None, batch_size, buffer_size, 'array', alpha, None, None, None)
+        buffer.memory = range(10) # small hack to initialize the memory with some values.
+
+        # start by testing the ranges with batch size 3.
+        segments = buffer._get_sample_ranges()
+        self.assertEqual(len(segments), batch_size)
+        self.assertTupleEqual(segments[0], (0, 0))
+        self.assertTupleEqual(segments[1], (1, 3))
+        self.assertTupleEqual(segments[2], (4, 9))
+
+        # increase batch size to 5 and repeat test.
+        buffer.batch_size = batch_size = 5
+        segments = buffer._get_sample_ranges()
+        self.assertEqual(len(segments), batch_size)
+        self.assertTupleEqual(segments[0], (0, 0))
+        self.assertTupleEqual(segments[1], (1, 1))
+        self.assertTupleEqual(segments[2], (2, 2))
+        self.assertTupleEqual(segments[3], (3, 5))
+        self.assertTupleEqual(segments[4], (6, 9))
+
+
+ArrayTest().test_batch_update()
