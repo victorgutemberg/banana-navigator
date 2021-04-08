@@ -72,6 +72,9 @@ class UniformReplayBuffer(ReplayBuffer):
         super().__init__(action_size, batch_size, seed)
         self.memory = deque(maxlen=buffer_size)
 
+    def batch_update(self, indexes, priorities):
+        pass
+
     def _get_experices_sample(self):
         indexes = np.random.choice(range(len(self.memory)), size=self.batch_size)
         experiences = [self.memory[i] for i in indexes]
