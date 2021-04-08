@@ -184,8 +184,9 @@ class RankBasedReplayBuffer(ReplayBuffer):
         for i in range(self.batch_size):
             segment_start, segment_end = segments[i]
             index = np.random.randint(segment_start, segment_end + 1)
-            priority, experience = self.memory[index]
-            probability = priority ** self.alpha
+            _, experience = self.memory[index]
+            rank = index + 1
+            probability = rank ** self.alpha
             probabilities[i] = probability
             total += probability
 
