@@ -35,3 +35,6 @@ MANIFEST
 
 # Jupyter notebook
 .ipynb_checkpoints
+
+# VS Code
+.vscode
