@@ -14,6 +14,7 @@ class Array:
 
     def batch_update(self, indexes, priorities):
         for index, priority in zip(indexes, priorities):
+            self.max_priority = max(priority, self.max_priority)
             self.transitions[index][0] = priority
         self.sort()
 
