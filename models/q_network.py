@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,3 +27,13 @@ class QNetwork(nn.Module):
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
+
+    def load_checkpoint(self, model_name, at_goal=False):
+        file_name = f'model_{model_name}'
+
+        if at_goal:
+            file_name += '_goal'
+
+        checkpoint_path = os.path.join('checkpoints', f'{file_name}.pt')
+        state_dict = torch.load(checkpoint_path)
+        self.load_state_dict(state_dict)
