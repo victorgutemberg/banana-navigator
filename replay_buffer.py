@@ -38,16 +38,16 @@ class ReplayBuffer:
     def sample(self):
         '''Sample a batch of experiences from memory.'''
 
-        indexes, experiences, weights = self._get_experices_sample()
+        indexes, experiences, is_weights = self._get_experices_sample()
 
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
         rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
         next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences if e is not None])).float().to(device)
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(device)
-        weights = torch.from_numpy(np.vstack(weights)).float().to(device)
+        is_weights = torch.from_numpy(np.vstack(is_weights)).float().to(device)
 
-        return indexes, (states, actions, rewards, next_states, dones), weights
+        return indexes, (states, actions, rewards, next_states, dones), is_weights
 
     @abstractmethod
     def _get_experices_sample(self,):
@@ -78,9 +78,9 @@ class UniformReplayBuffer(ReplayBuffer):
     def _get_experices_sample(self):
         indexes = np.random.choice(range(len(self.memory)), size=self.batch_size)
         experiences = [self.memory[i] for i in indexes]
-        weights = np.ones(self.batch_size)
+        is_weights = np.ones(self.batch_size)
 
-        return (indexes, experiences, weights)
+        return (indexes, experiences, is_weights)
 
     def __len__(self):
         return super().__len__()
@@ -118,7 +118,8 @@ class ProportionalReplayBuffer(ReplayBuffer):
         experiences = np.zeros(self.batch_size, dtype=tuple)
         probabilities = np.zeros(self.batch_size)
         total = 0
-        weights = np.zeros(self.batch_size)
+        # Importance Sampling (IS) weights.
+        is_weights = np.zeros(self.batch_size)
         for i in range(self.batch_size):
             range_start = i * range_size
             range_end = (i + 1) * range_size
@@ -134,15 +135,15 @@ class ProportionalReplayBuffer(ReplayBuffer):
 
         for i in range(self.batch_size):
             probability = probabilities[i] / total
-            weights[i] = ((1 / N) * (1 / probability)) ** self.beta
+            is_weights[i] = ((1 / N) * (1 / probability)) ** self.beta
 
-        # normalize weights so they have range [0, 1].
-        weights /= weights.max()
+        # normalize is_weights so they have range [0, 1].
+        is_weights /= is_weights.max()
 
         # increment value of beta after each sampling up to a maximum of 1.
         self.beta = max(self.beta + self.beta_inc, 1.0)
 
-        return (indexes, experiences, weights)
+        return (indexes, experiences, is_weights)
 
 
 class RankBasedReplayBuffer(ReplayBuffer):
@@ -182,7 +183,8 @@ class RankBasedReplayBuffer(ReplayBuffer):
         indexes = np.zeros(self.batch_size, dtype=int)
         experiences = np.zeros(self.batch_size, dtype=tuple)
         probabilities = np.zeros(self.batch_size)
-        weights = np.zeros(self.batch_size)
+        # Importance Sampling (IS) weights.
+        is_weights = np.zeros(self.batch_size)
         total = 0
         for i in range(self.batch_size):
             segment_start, segment_end = segments[i]
@@ -198,15 +200,15 @@ class RankBasedReplayBuffer(ReplayBuffer):
 
         for i in range(self.batch_size):
             probability = probabilities[i] / total
-            weights[i] = ((1 / N) * (1 / probability)) ** self.beta
+            is_weights[i] = ((1 / N) * (1 / probability)) ** self.beta
 
-        # normalize weights so they have range [0, 1].
-        weights /= weights.max()
+        # normalize is_weights so they have range [0, 1].
+        is_weights /= is_weights.max()
 
         # increment value of beta after each sampling up to a maximum of 1.
         self.beta = max(self.beta + self.beta_inc, 1.0)
 
-        return (indexes, experiences, weights)
+        return (indexes, experiences, is_weights)
 
     def _get_sample_ranges(self):
         N = len(self.memory)

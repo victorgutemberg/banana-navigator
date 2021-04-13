@@ -52,8 +52,8 @@ class Agent():
         if self.t_step == 0:
             # if enough samples are available in memory, get random subset and learn.
             if len(self.memory) > BATCH_SIZE:
-                indexes, experiences, weights = self.memory.sample()
-                self.learn(indexes, experiences, weights)
+                indexes, experiences, is_weights = self.memory.sample()
+                self.learn(indexes, experiences, is_weights)
 
     def act(self, state, eps=0.):
         '''Returns actions for given state as per current policy.
@@ -75,7 +75,7 @@ class Agent():
         else:
             return random.choice(np.arange(self.action_size))
 
-    def learn(self, indexes, experiences, weights, gamma=GAMMA):
+    def learn(self, indexes, experiences, is_weights, gamma=GAMMA):
         '''Update value parameters using given batch of experience tuples.
 
         Params
@@ -88,7 +88,7 @@ class Agent():
         # get max predicted Q values (for next states) from target model.
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # compute Q targets for current states.
-        Q_targets = rewards + (gamma * weights * Q_targets_next * (1 - dones))
+        Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
 
         # get expected Q values from local model.
         Q_expected = self.qnetwork_local(states).gather(1, actions)
@@ -98,7 +98,7 @@ class Agent():
         self.memory.batch_update(indexes, priorities)
 
         # compute loss.
-        loss = F.mse_loss(Q_expected, Q_targets)
+        loss = (is_weights * F.mse_loss(Q_expected, Q_targets)).mean()
         # minimize the loss.
         self.optimizer.zero_grad()
         loss.backward()
