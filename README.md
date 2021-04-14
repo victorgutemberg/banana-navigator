@@ -34,6 +34,10 @@ At any given state, the agent has the four discrete actions to take. It can move
 
 The agent receives a reward of +1 for every yellow banana collected and -1 if a blue banana is collected.
 
+### Solving the environment
+
+The environment is considered solved when the agent can get an average score of +13 over 100 consecutive episodes.
+
 ## Running the project
 
 ### Installing dependencies
