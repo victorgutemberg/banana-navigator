@@ -10,7 +10,7 @@ from sum_tree import SumTree
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-to_experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'next_state', 'done'])
+Experience = namedtuple('Experience', field_names=['state', 'action', 'reward', 'next_state', 'done'])
 
 
 class ReplayBuffer:
@@ -32,7 +32,7 @@ class ReplayBuffer:
 
     def add(self, state, action, reward, next_state, done):
         '''Add a new experience to memory.'''
-        experience = to_experience(state, action, reward, next_state, done)
+        experience = Experience(state, action, reward, next_state, done)
         self.memory.append(experience)
 
     def sample(self):
