@@ -50,7 +50,7 @@ class ReplayBuffer:
         return indexes, (states, actions, rewards, next_states, dones), is_weights
 
     @abstractmethod
-    def _get_experices_sample(self,):
+    def _get_experices_sample(self):
         raise NotImplementedError()
 
     def __len__(self):
