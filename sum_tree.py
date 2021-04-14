@@ -1,7 +1,8 @@
 import numpy as np
 
+
 class SumTree:
-    def __init__(self, capacity, e):
+    def __init__(self, capacity, e=0.2):
         # the depth of the complete binary tree.
         depth = int(np.ceil(np.log2(capacity)) + 1)
         leaves_capacity = 2 ** (depth - 1)
@@ -62,13 +63,17 @@ class SumTree:
 
         return (index, priority, transition)
 
+    def _is_valid_index(self, index):
+        max_index = self.capacity + self._leaves_offset
+        return index < max_index and self.nodes[index]
+
     def _sample(self, index, priority):
         # if reached a leaf index, stop and return transition index.
         while index < self._leaves_offset:
             left_index = self.get_left_index(index)
             right_index = self.get_right_index(index)
 
-            if priority < self.nodes[left_index]:
+            if priority < self.nodes[left_index] or not self._is_valid_index(right_index):
                 index = left_index
             else:
                 index = right_index

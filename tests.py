@@ -54,7 +54,7 @@ class SumTreeTest(unittest.TestCase):
         self.assertEqual(len(SumTree(9).nodes), 24)
 
     def test_append(self):
-        tree = SumTree(3)
+        tree = SumTree(3, e=0)
 
         self.assertEquals(len(tree), 0)
 
@@ -84,7 +84,7 @@ class SumTreeTest(unittest.TestCase):
         self.assertEquals(len(tree), 3)
 
     def test_sample(self):
-        tree = SumTree(4)
+        tree = SumTree(4, e=0)
         tree.append(experience)
         tree.update(0, 1)
         tree.append(experience)
@@ -98,6 +98,17 @@ class SumTreeTest(unittest.TestCase):
         self.assertEqual(tree.sample(2)[1], 2)
         self.assertEqual(tree.sample(3)[1], 3)
         self.assertEqual(tree.sample(4)[1], 3)
+
+    def test_sample_right_index_limit(self):
+        '''Test requesting a very high priority to check if it doesn't run off right limit.'''
+        tree = SumTree(3, e=0)
+        tree.append(experience)
+        tree.update(0, 1)
+
+        tree.append(experience)
+        tree.update(1, 2)
+
+        self.assertEqual(tree.sample(5)[1], 2)
 
 
 class RankBasedReplayBufferTest(unittest.TestCase):
@@ -124,6 +135,3 @@ class RankBasedReplayBufferTest(unittest.TestCase):
         self.assertTupleEqual(segments[2], (2, 2))
         self.assertTupleEqual(segments[3], (3, 5))
         self.assertTupleEqual(segments[4], (6, 9))
-
-
-ArrayTest().test_batch_update()
